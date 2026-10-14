@@ -1,0 +1,39 @@
+[project]
+name = "recall-bench"
+version = "0.1.0"
+description = "Zero-shot long-range recall benchmark for genomic language models"
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.6.0",
+    "numpy>=1.26",
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+    "python-dotenv>=1.0",
+    "huggingface-hub>=0.26",
+    "transformers>=4.46",
+    "datasets>=3.0",
+    "einops>=0.8",
+    "biopython>=1.84",
+    "flash-linear-attention>=0.5.2",
+    # Mnemos-DNA arms (D01/D02/D06/D07) and its HyenaDNA/Caduceus loaders
+    "dna-kda",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128" }]
+dna-kda = { git = "https://github.com/B4K2/Mnemos-DNA" }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["recall_bench"]

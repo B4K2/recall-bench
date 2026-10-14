@@ -1,0 +1,38 @@
+# Model registry. One entry per model; scripts/run_one.sh <name> downloads it, runs the recall
+# test, and (with --cleanup) deletes the weights before the next model is fetched.
+#
+# family:   mnemos | hyenadna | caduceus | hf_mlm | hf_causal | text_causal | evo2
+# domain:   dna | text   (text models run the same copy protocol on text: positive control,
+#                         since text pretraining is known to induce copying/induction heads)
+# max_ctx:  context limit in *tokens* the model can run at; sweep points above it are skipped
+# align:    piece lengths are rounded to a multiple of this (6 for 6-mer tokenizers, so the
+#           scored segment tokenizes identically in the repeat and control windows)
+
+# --- ours (B4K2xx/Mnemos-DNA, one repo; subdir = arm) --------------------------------------
+pure-kda-d01:   {family: mnemos, domain: dna, hf_id: B4K2xx/Mnemos-DNA, subdir: pure-kda-d01, max_ctx: 1048576, group: ours}
+kda-local-d02:  {family: mnemos, domain: dna, hf_id: B4K2xx/Mnemos-DNA, subdir: kda-local-d02, max_ctx: 1048576, group: ours}
+mnemos-dna:     {family: mnemos, domain: dna, hf_id: B4K2xx/Mnemos-DNA, subdir: mnemos-dna, max_ctx: 1048576, group: ours}
+mnemos-dna-c:   {family: mnemos, domain: dna, hf_id: B4K2xx/Mnemos-DNA, subdir: mnemos-dna-c, max_ctx: 1048576, group: ours}
+
+# --- published long-context DNA baselines --------------------------------------------------
+hyenadna-tiny-1k:    {family: hyenadna, domain: dna, hf_id: LongSafari/hyenadna-tiny-1k-seqlen-hf, max_ctx: 1024, group: baseline}
+hyenadna-small-32k:  {family: hyenadna, domain: dna, hf_id: LongSafari/hyenadna-small-32k-seqlen-hf, max_ctx: 32768, group: baseline}
+hyenadna-medium-450k: {family: hyenadna, domain: dna, hf_id: LongSafari/hyenadna-medium-450k-seqlen-hf, max_ctx: 450000, group: baseline}
+hyenadna-large-1m:   {family: hyenadna, domain: dna, hf_id: LongSafari/hyenadna-large-1m-seqlen-hf, max_ctx: 1048576, group: baseline}
+caduceus-ph-131k:    {family: caduceus, domain: dna, hf_id: kuleshov-group/caduceus-ph_seqlen-131k_d_model-256_n_layer-16, max_ctx: 131072, group: baseline}
+caduceus-ps-131k:    {family: caduceus, domain: dna, hf_id: kuleshov-group/caduceus-ps_seqlen-131k_d_model-256_n_layer-16, max_ctx: 131072, group: baseline}
+
+# --- other DNA LMs (short context / k-mer / BPE) -------------------------------------------
+nt-v2-50m:       {family: hf_mlm, domain: dna, hf_id: InstaDeepAI/nucleotide-transformer-v2-50m-multi-species, max_ctx: 2048, align: 6, group: other_dna}
+nt-v2-500m:      {family: hf_mlm, domain: dna, hf_id: InstaDeepAI/nucleotide-transformer-v2-500m-multi-species, max_ctx: 2048, align: 6, group: other_dna}
+dnabert2-117m:   {family: hf_mlm, domain: dna, hf_id: zhihan1996/DNABERT-2-117M, max_ctx: 2048, group: other_dna}
+gena-lm-bert-t2t: {family: hf_mlm, domain: dna, hf_id: AIRI-Institute/gena-lm-bert-base-t2t, max_ctx: 512, group: other_dna}
+generator-1.2b:  {family: hf_causal, domain: dna, hf_id: GenerTeam/GENERator-eukaryote-1.2b-base, max_ctx: 16384, align: 6, group: other_dna}
+evo2-1b:         {family: evo2, domain: dna, hf_id: arcinstitute/evo2_1b_base, max_ctx: 8192, group: other_dna, optional: true}
+
+# --- text LMs (positive control for the protocol) ------------------------------------------
+pythia-160m:     {family: text_causal, domain: text, hf_id: EleutherAI/pythia-160m, max_ctx: 2048, group: text}
+mamba-130m:      {family: text_causal, domain: text, hf_id: state-spaces/mamba-130m-hf, max_ctx: 1048576, group: text}
+rwkv4-169m:      {family: text_causal, domain: text, hf_id: RWKV/rwkv-4-169m-pile, max_ctx: 1048576, group: text}
+gla-340m:        {family: text_causal, domain: text, hf_id: fla-hub/gla-340M-15B, max_ctx: 1048576, group: text}
+deltanet-1.3b:   {family: text_causal, domain: text, hf_id: fla-hub/delta_net-1.3B-100B, max_ctx: 1048576, group: text}
