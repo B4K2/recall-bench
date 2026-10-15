@@ -1,21 +1,18 @@
-"""Background corpora for the copy probe.
+"""Background corpora for the copy probe, written under <home>/data (see recall_bench.paths).
 
-dna:  held-out hg38 — the Basenji/Enformer *test* intervals (same split HyenaDNA and Mnemos-DNA
+dna:  held-out hg38 -- the Basenji/Enformer *test* intervals (same split HyenaDNA and Mnemos-DNA
       hold out), merged into contiguous blocks, uppercased. Saved as uint8 ASCII + block offsets.
-text: wikitext-103 test split, concatenated (for the text-LM positive control).
-
-    uv run python scripts/prepare_data.py dna text
+      Downloads ~1 GB (hg38.fa.gz); needs `biopython` (pip install recall-bench[data]).
+text: wikitext-103 test split, concatenated (for the text-LM positive control); needs `datasets`.
 """
-import argparse
 import gzip
-import sys
 import urllib.request
 from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parent.parent
-DATA = ROOT / "data"
+from recall_bench.paths import data_dir
+
 FASTA_URL = "https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz"
 BED_URL = "https://storage.googleapis.com/basenji_barnyard2/sequences_human.bed"
 
@@ -29,11 +26,13 @@ def fetch(url: str, dst: Path):
     tmp.rename(dst)
 
 
-def dna():
-    out = DATA / "hg38_test.npz"
+def prepare_dna():
+    root = data_dir()
+    root.mkdir(parents=True, exist_ok=True)
+    out = root / "hg38_test.npz"
     if out.exists():
         print(f"{out} exists"); return
-    fa, bed = DATA / "hg38.fa.gz", DATA / "sequences_human.bed"
+    fa, bed = root / "hg38.fa.gz", root / "sequences_human.bed"
     fetch(BED_URL, bed)
     fetch(FASTA_URL, fa)
     by_chrom = {}
@@ -63,19 +62,13 @@ def dna():
           f"longest {max(map(len, blocks))/1e3:.0f} kbp")
 
 
-def text():
-    out = DATA / "wikitext103_test.txt"
+def prepare_text():
+    root = data_dir()
+    root.mkdir(parents=True, exist_ok=True)
+    out = root / "wikitext103_test.txt"
     if out.exists():
         print(f"{out} exists"); return
     from datasets import load_dataset
     ds = load_dataset("Salesforce/wikitext", "wikitext-103-raw-v1", split="test")
     out.write_text("".join(ds["text"]))
     print(f"{out}: {out.stat().st_size/1e6:.1f} MB")
-
-
-if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
-    ap.add_argument("what", nargs="+", choices=["dna", "text"])
-    DATA.mkdir(exist_ok=True)
-    for w in ap.parse_args().what:
-        {"dna": dna, "text": text}[w]()

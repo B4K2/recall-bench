@@ -1,14 +1,25 @@
 """Zero-shot repeat-copy recall probe (extends Mnemos-DNA §6.4 `--needle-mode copy`).
 
-    repeat : [ lead bg ][ segment A ][ d units of background ][ segment A ]
-    control: [ lead bg ][ bg        ][ d units of background ][ segment A ]
-                                                               ^^^^^^^^^ scored
+    repeat : [ lead bg ][ segment A' ][ d units of background ][ segment A ]
+    control: [ lead bg ][ C          ][ d units of background ][ segment A ]
+                                                                ^^^^^^^^^ scored
 
 copy_advantage = CE(control) - CE(repeat), in nats per unit (bp for DNA, token for text), over
-the identical final segment. The two windows differ only in the earlier occurrence, so the
-paired diff isolates recall of A across d intervening units. Causal models score the segment
-by next-token CE; masked LMs by masking the whole final segment and predicting it in one pass
+the identical final segment. The two windows differ only in the earlier piece, so the paired
+diff isolates recall of A across d intervening units. Causal models score the segment by
+next-token CE; masked LMs by masking the whole final segment and predicting it in one pass
 (their only route to A is then the earlier copy, read bidirectionally).
+
+Protocol options (defaults reproduce the original benchmark bit-for-bit):
+  variant  what the earlier piece A' is
+           exact    A' = A
+           mutate   A with each base substituted w.p. `mut_rate` (diverged repeats)
+           revcomp  reverse complement of A (inverted repeats; DNA only)
+  control  what the control piece C is
+           native   the genome that really precedes D (C is untouched background)
+           foreign  a segment from an unrelated location, so the repeat and control windows
+                    both carry an out-of-place piece and differ only in its *identity*
+                    (removes the short-distance context-disruption penalty of `native`)
 
 Units: DNA pieces are strings of bases, tokenized piece-by-piece and concatenated, so the
 scored tokens are byte-identical in both windows even under k-mer/BPE tokenizers (piece
@@ -21,13 +32,24 @@ import torch
 import torch.nn.functional as F
 
 LEAD_MIN = 64
-ACGT = set(b"ACGT")
+VARIANTS = ("exact", "mutate", "revcomp")
+CONTROLS = ("native", "foreign")
+_COMP = str.maketrans("ACGTN", "TGCAN")
+_SUB = {b: [c for c in "ACGT" if c != b] for b in "ACGT"}
 
 
 class DNABackground:
-    def __init__(self, path):
-        z = np.load(path)
-        self.seq, self.off = z["seq"], z["offsets"]
+    def __init__(self, path=None, *, seq=None, offsets=None):
+        if path is not None:
+            z = np.load(path)
+            seq, offsets = z["seq"], z["offsets"]
+        self.seq, self.off = np.asarray(seq, dtype=np.uint8), np.asarray(offsets)
+
+    @classmethod
+    def from_strings(cls, blocks):
+        """Background from in-memory sequences (one contiguous block each), e.g. another genome."""
+        arrs = [np.frombuffer(b.upper().encode(), dtype=np.uint8) for b in blocks]
+        return cls(seq=np.concatenate(arrs), offsets=np.cumsum([0] + [len(a) for a in arrs]))
 
     def sample(self, rng, n: int) -> str:
         """n contiguous bp with <1% N, from one held-out block (several random blocks
@@ -66,8 +88,26 @@ def _round(n, a):
     return max(a, (n // a) * a)
 
 
-def build_pair(adapter, bg, rng, ctx, dist, seg):
-    """Returns (repeat_ids, control_ids, span) with span = (start, end) of the scored tokens."""
+def revcomp(s: str) -> str:
+    return s.translate(_COMP)[::-1]
+
+
+def mutate(s: str, rate: float, rng) -> str:
+    """Independent substitutions at `rate` per base (N is left alone)."""
+    hit = rng.random(len(s)) < rate
+    pick = rng.integers(0, 3, len(s))
+    return "".join(_SUB[c][k] if h and c in _SUB else c for c, h, k in zip(s, hit, pick))
+
+
+def build_pair(adapter, bg, rng, ctx, dist, seg, variant="exact", mut_rate=0.0, control="native",
+               aux=None):
+    """Returns (repeat_ids, control_ids, repeat_span, control_span); spans are (start, end) of
+    the scored tokens. Randomness for non-default options comes from the separate `aux`
+    stream, so `rng` -- and hence every lead/background/segment -- is identical across options
+    for a given (seed, ctx, dist), and the default options reproduce the original windows."""
+    aux = rng if aux is None else aux
+    if variant not in VARIANTS or control not in CONTROLS:
+        raise ValueError(f"variant must be one of {VARIANTS}, control one of {CONTROLS}")
     lead = ctx - 2 * seg - dist
     if adapter.domain == "dna":
         a = adapter.align
@@ -75,14 +115,27 @@ def build_pair(adapter, bg, rng, ctx, dist, seg):
         w = bg.sample(rng, lead + 2 * seg_ + dist_)
         p_lead, p_ctrl, p_dist = w[:lead], w[lead:lead + seg_], w[lead + seg_:lead + seg_ + dist_]
         p_seg = w[lead + seg_ + dist_:]
+        p_first = p_seg
+        if variant == "mutate":
+            p_first = mutate(p_seg, mut_rate, aux)
+        elif variant == "revcomp":
+            p_first = revcomp(p_seg)
+        if control == "foreign":
+            p_ctrl = bg.sample(aux, seg_)
         t = adapter.tokenize
         T_lead, T_ctrl, T_dist, T_seg = t(p_lead), t(p_ctrl), t(p_dist), t(p_seg)
+        T_first = T_seg if p_first is p_seg else t(p_first)
     else:
+        if variant != "exact":
+            raise ValueError("mutate/revcomp variants are defined for DNA only")
         w = bg.sample(rng, lead + 3 * seg + dist)
         T_lead, T_ctrl = w[:lead], w[lead:lead + seg]
         T_dist, T_seg = w[lead + seg:lead + seg + dist], w[lead + seg + dist:lead + 2 * seg + dist]
+        if control == "foreign":
+            T_ctrl = bg.sample(aux, seg)
+        T_first = T_seg
     pre = adapter.prefix
-    rep = pre + T_lead + T_seg + T_dist + T_seg + adapter.suffix
+    rep = pre + T_lead + T_first + T_dist + T_seg + adapter.suffix
     ctl = pre + T_lead + T_ctrl + T_dist + T_seg + adapter.suffix
     # BPE can give the control piece a different token count, so spans are taken from the end.
     end_r = len(rep) - len(adapter.suffix)
@@ -103,14 +156,16 @@ def segment_ce(adapter, ids, span) -> float:
     return F.cross_entropy(lg, tgt, reduction="sum").item()
 
 
-def run_point(adapter, bg, ctx, dist, seg, trials, seed, partial=(), on_trial=None):
+def run_point(adapter, bg, ctx, dist, seg, trials, seed, partial=(), on_trial=None,
+              variant="exact", mut_rate=0.0, control="native"):
     """partial: per-trial diffs from an interrupted run; their samples are replayed (no model
     call) so the rng stream and final result match an uninterrupted run. on_trial(diffs) is
     called after every new trial so the caller can checkpoint."""
     rng = np.random.default_rng([seed, ctx, dist])
+    aux = np.random.default_rng([seed, ctx, dist, 1])
     diffs, ntok = list(partial), 0
     for i in range(trials):
-        rep, ctl, sr, sc = build_pair(adapter, bg, rng, ctx, dist, seg)
+        rep, ctl, sr, sc = build_pair(adapter, bg, rng, ctx, dist, seg, variant, mut_rate, control, aux)
         if len(rep) > adapter.max_ctx or len(ctl) > adapter.max_ctx:
             return {"status": "skip: above model max_ctx", "tokens": max(len(rep), len(ctl))}
         ntok = len(rep)

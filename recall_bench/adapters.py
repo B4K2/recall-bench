@@ -1,4 +1,4 @@
-"""One uniform surface over every model family in models.yaml.
+"""One uniform surface over every model family in models.yaml, plus wrappers for your own models.
 
     a = load_adapter(name, device)
     a.tokenize(str) -> list[int]      # model's own vocab, no special tokens
@@ -14,7 +14,7 @@ import importlib
 import torch
 import yaml
 
-from recall_bench import ROOT, model_dir, registry
+from recall_bench.paths import PKG, model_dir, registry
 
 
 class Adapter:
@@ -25,7 +25,7 @@ class Adapter:
 
     def __init__(self, name, entry, device, dtype):
         self.name, self.entry, self.device, self.dtype = name, entry, device, dtype
-        self.path = model_dir(name)
+        self.path = entry.get("path") or model_dir(name)
         self.max_ctx = int(entry["max_ctx"])
         self.align = int(entry.get("align", 1))
         self.domain = entry["domain"]
@@ -70,7 +70,7 @@ class Mnemos(Adapter):
         from dataset.tokenizer import BOS_ID, encode
         d = self.path / self.entry["subdir"]
         # HF configs are overlays on Mnemos-DNA's base.yaml (vendored as configs/mnemos_base.yaml)
-        cfg = _merge(yaml.safe_load((ROOT / "configs/mnemos_base.yaml").read_text()),
+        cfg = _merge(yaml.safe_load((PKG / "configs/mnemos_base.yaml").read_text()),
                      yaml.safe_load((d / "config.yaml").read_text()))
         mod = importlib.import_module(f"models.{cfg.get('model_module', cfg['model_id'])}")
         self.model = mod.build_model(cfg)
@@ -199,8 +199,67 @@ FAMILIES = {"mnemos": Mnemos, "hyenadna": HyenaDNA, "caduceus": Caduceus, "hf_ml
             "hf_causal": HFCausalLM, "text_causal": HFCausalLM, "evo2": Evo2}
 
 
-def load_adapter(name: str, device: str = "cuda", dtype=torch.bfloat16) -> Adapter:
-    entry = registry()[name]
+def download(name: str) -> str:
+    """Fetch one registry model into checkpoints/<name> (idempotent)."""
+    import os
+    from huggingface_hub import snapshot_download
+    e = registry()[name]
+    patterns = [f"{e['subdir']}/*"] if "subdir" in e else None
+    return snapshot_download(e["hf_id"], local_dir=model_dir(name), allow_patterns=patterns,
+                             token=os.environ.get("HUGGING_FACE_TOKEN") or None)
+
+
+def load_adapter(name: str, device: str = "cuda", dtype=torch.bfloat16,
+                 fetch: bool = False) -> Adapter:
+    """A model from the packaged registry (`recall-bench list`)."""
+    reg = registry()
+    if name not in reg:
+        raise KeyError(f"unknown model {name!r}; see `recall-bench list`")
     if not model_dir(name).exists():
-        raise SystemExit(f"checkpoints/{name} missing: uv run python scripts/download_model.py {name}")
-    return FAMILIES[entry["family"]](name, entry, device, dtype)
+        if not fetch:
+            raise FileNotFoundError(f"{model_dir(name)} missing: run `recall-bench download {name}`")
+        download(name)
+    return FAMILIES[reg[name]["family"]](name, reg[name], device, dtype)
+
+
+def from_hf(hf_id: str, causal: bool = True, domain: str = "dna", max_ctx: int = 2048,
+            align: int = 1, device: str = "cuda", dtype=torch.bfloat16) -> Adapter:
+    """Any Hugging Face AutoModelForCausalLM / AutoModelForMaskedLM checkpoint (id or local path)
+    with its own tokenizer. Set `align` to k for k-mer tokenizers."""
+    entry = {"family": "hf_causal" if causal else "hf_mlm", "domain": domain, "path": hf_id,
+             "hf_id": hf_id, "max_ctx": max_ctx, "align": align}
+    return (HFCausalLM if causal else HFMaskedLM)(hf_id.replace("/", "--"), entry, device, dtype)
+
+
+class CallableModel(Adapter):
+    """Wrap your own model -- no registry entry, no Hugging Face needed.
+
+        model = CallableModel(
+            logits_fn=lambda ids: net(ids),       # LongTensor (1, T) -> (1, T, V)
+            tokenize=lambda s: [VOCAB[c] for c in s],
+            causal=True, max_ctx=131072)
+
+    For masked LMs pass causal=False and mask_id. prefix/suffix are special-token ids put
+    around every window (e.g. [BOS] or [CLS] ... [SEP]). align=k for k-mer tokenizers.
+    """
+
+    def __init__(self, logits_fn, tokenize, *, causal=True, max_ctx=2048, domain="dna",
+                 align=1, mask_id=None, prefix=(), suffix=(), name="custom", device=None):
+        if not causal and mask_id is None:
+            raise ValueError("masked LMs need mask_id")
+        self.name, self._fn, self._tok = name, logits_fn, tokenize
+        self.causal, self.mask_id, self.max_ctx = causal, mask_id, int(max_ctx)
+        self.domain, self.align = domain, int(align)
+        self.prefix, self.suffix = list(prefix), list(suffix)
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+
+    def tokenize(self, s):
+        return list(self._tok(s))
+
+    @torch.no_grad()
+    def logits(self, ids):
+        out = self._fn(ids)
+        out = getattr(out, "logits", out)
+        if isinstance(out, (tuple, list)):
+            out = out[0]
+        return out.float()

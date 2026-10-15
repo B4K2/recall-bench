@@ -5,8 +5,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 command -v uv >/dev/null || { curl -LsSf https://astral.sh/uv/install.sh | sh; export PATH="$HOME/.local/bin:$PATH"; }
-uv sync --inexact
+uv sync --inexact --all-extras
 uv run python -c "import torch; print('torch', torch.__version__, 'cuda', torch.cuda.is_available())"
 [ -f .env ] || { cp .env.example .env; echo "created .env — set HUGGING_FACE_TOKEN"; }
-uv run python scripts/prepare_data.py dna text
+RECALL_BENCH_HOME="$PWD" uv run recall-bench prepare dna text
 echo "Next: bash scripts/run_one.sh hyenadna-small-32k"

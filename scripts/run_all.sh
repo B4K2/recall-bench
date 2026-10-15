@@ -15,7 +15,7 @@ groups="${*:-}"
 names=$(uv run python - "$groups" <<'P'
 import sys, yaml
 g = sys.argv[1].split()
-for n, e in yaml.safe_load(open("models.yaml")).items():
+for n, e in yaml.safe_load(open("recall_bench/models.yaml")).items():
     if (not g or e["group"] in g) and not e.get("optional"):
         print(n)
 P

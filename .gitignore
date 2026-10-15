@@ -20,3 +20,4 @@ paper/*/*.log
 paper/*/*.blg
 paper/*/*.out
 research-paper-writing-1.0.0/
+results/**/partial_*.json
