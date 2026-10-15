@@ -234,9 +234,10 @@ options reproduce the original windows exactly.
 \subsection{Software package}
 \label{sec:impl}
 
-\textsc{RecallBench-DNA} is distributed as a pip-installable Python package,
-\texttt{recall-bench}, with a minimal core (PyTorch, NumPy, PyYAML) and optional extras for
-Hugging Face models and data preparation. It is designed so that evaluating a new model takes
+\textsc{RecallBench-DNA} is distributed on PyPI as the Python package
+\texttt{recall-bench} (\texttt{pip install recall-bench}; v0.2.0 used for all results), with a minimal core (PyTorch, NumPy, PyYAML) and optional extras for
+Hugging Face models and data preparation. The model code needed to load the Mnemos-DNA
+checkpoints is bundled, so the full study installs from PyPI alone. It is designed so that evaluating a new model takes
 a few lines and no knowledge of the benchmark's internals:
 
 \begin{small}
@@ -443,6 +444,7 @@ up to 256\,kbp. We hope the benchmark becomes a routine companion to context-len
 and a diagnostic for the next generation of long-range genomic models.
 
 \section*{Availability}
+Package: \url{https://pypi.org/project/recall-bench/} (\texttt{pip install recall-bench}).
 Code, model registry, and all per-trial results:
 \url{https://github.com/B4K2/recall-bench}. Mnemos-DNA weights:
 \url{https://huggingface.co/B4K2xx/Mnemos-DNA}.

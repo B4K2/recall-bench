@@ -1,5 +1,10 @@
 # recall-bench
 
+[![PyPI](https://img.shields.io/pypi/v/recall-bench)](https://pypi.org/project/recall-bench/)
+[![Python](https://img.shields.io/pypi/pyversions/recall-bench)](https://pypi.org/project/recall-bench/)
+[![Downloads](https://static.pepy.tech/badge/recall-bench)](https://pepy.tech/project/recall-bench)
+[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97-Mnemos--DNA-yellow)](https://huggingface.co/B4K2xx/Mnemos-DNA)
+
 Zero-shot long-range **recall** benchmark for genomic language models: how far back can a DNA
 LM still use an exact earlier copy of a sequence? Spun off from the Mnemos-DNA repeat-copy probe
 ([B4K2/Mnemos-DNA](https://github.com/B4K2/Mnemos-DNA), §6.4). Paper source: [`paper/`](paper/).
@@ -22,13 +27,15 @@ Every option sees the *same* windows for a given (seed, ctx, d), so options comp
 ## Install
 
 ```bash
-pip install "recall-bench[hf,data] @ git+https://github.com/B4K2/recall-bench"
+pip install "recall-bench[hf,data]"
+# latest from GitHub: pip install "recall-bench[hf,data] @ git+https://github.com/B4K2/recall-bench"
 ```
 
 Extras: `hf` (Hugging Face models), `data` (building the backgrounds), `mnemos` (Mnemos-DNA arms,
-Caduceus, GLA/DeltaNet; with pip, first `pip install git+https://github.com/B4K2/Mnemos-DNA`),
+Caduceus, GLA/DeltaNet; the Mnemos-DNA model code is bundled),
 `all`. The core needs only `torch`, `numpy`, `pyyaml`.
-Blackwell (sm_120) GPUs need the CUDA 12.8 torch wheels; inside this repo `uv sync --all-extras`
+Blackwell (sm_120, RTX 50-series) GPUs need the CUDA 12.8 torch wheels
+(`pip install torch --index-url https://download.pytorch.org/whl/cu128`); inside this repo `uv sync --all-extras`
 pins them.
 
 Data and weights go under `$RECALL_BENCH_HOME` (default `~/.cache/recall_bench`):
