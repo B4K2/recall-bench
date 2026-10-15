@@ -1,0 +1,30 @@
+==> [mnemos-dna] protocols
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files:  50%|█████     | 1/2 [00:00<00:00,  2.46it/s]Fetching 2 files: 100%|██████████| 2/2 [00:05<00:00,  2.94s/it]Fetching 2 files: 100%|██████████| 2/2 [00:05<00:00,  2.56s/it]
+ctx=    2048 d=     64  copy_advantage=+0.8270 ± 0.0352  (15.0s)
+ctx=    2048 d=    256  copy_advantage=+0.8266 ± 0.0361  (6.9s)
+ctx=    2048 d=   1024  copy_advantage=+0.8050 ± 0.0351  (7.0s)
+ctx=    8192 d=   4096  copy_advantage=+0.7471 ± 0.0373  (21.6s)
+ctx=   32768 d=  16384  copy_advantage=+0.7463 ± 0.0351  (81.8s)
+ctx=  131072 d=  65536  copy_advantage=+0.6026 ± 0.0302  (311.5s)
+ctx=    2048 d=     64  copy_advantage=-0.0151 ± 0.0040  (11.0s)
+ctx=    2048 d=    256  copy_advantage=-0.0021 ± 0.0008  (6.7s)
+ctx=    2048 d=   1024  copy_advantage=-0.0004 ± 0.0004  (6.6s)
+ctx=    8192 d=   4096  copy_advantage=+0.0000 ± 0.0001  (21.9s)
+ctx=   32768 d=  16384  copy_advantage=+0.0000 ± 0.0001  (83.9s)
+ctx=  131072 d=  65536  copy_advantage=+0.0001 ± 0.0001  (316.5s)
+ctx=    2048 d=     64  copy_advantage=+0.7082 ± 0.0324  (10.9s)
+ctx=    2048 d=   1024  copy_advantage=+0.6973 ± 0.0315  (6.7s)
+ctx=   32768 d=  16384  copy_advantage=+0.6388 ± 0.0311  (84.1s)
+ctx=  131072 d=  65536  copy_advantage=+0.5091 ± 0.0263  (319.4s)
+ctx=    2048 d=     64  copy_advantage=+0.4042 ± 0.0217  (11.1s)
+ctx=    2048 d=   1024  copy_advantage=+0.3886 ± 0.0205  (7.2s)
+ctx=   32768 d=  16384  copy_advantage=+0.3473 ± 0.0195  (84.4s)
+ctx=  131072 d=  65536  copy_advantage=+0.2472 ± 0.0147  (318.5s)
+ctx=    2048 d=     64  copy_advantage=+0.1984 ± 0.0139  (11.2s)
+ctx=    2048 d=   1024  copy_advantage=+0.1858 ± 0.0111  (6.6s)
+ctx=   32768 d=  16384  copy_advantage=+0.1544 ± 0.0107  (84.4s)
+ctx=  131072 d=  65536  copy_advantage=+0.0948 ± 0.0074  (318.6s)
+ctx=    2048 d=     64  copy_advantage=+0.0293 ± 0.0052  (11.0s)
+ctx=    2048 d=   1024  copy_advantage=+0.0288 ± 0.0031  (6.7s)
+ctx=   32768 d=  16384  copy_advantage=+0.0196 ± 0.0025  (84.5s)
+ctx=  131072 d=  65536  copy_advantage=+0.0104 ± 0.0015  (318.6s)

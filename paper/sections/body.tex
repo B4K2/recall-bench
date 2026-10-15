@@ -46,9 +46,13 @@ segment's full entropy for a model with perfect recall.
     no practically meaningful recall at any distance, including distances well within
     their advertised context. Only models with an explicit content-addressed memory show
     strong recall, which persists at $2\times$ their training context.
-  \item \textbf{An open, resumable, one-model-at-a-time harness} that runs every model in this
-    paper on a single 8\,GB consumer GPU, with a declarative model registry so new checkpoints
-    can be added with one line (\S\ref{sec:impl}).
+  \item \textbf{Protocol extensions} for diverged (substituted) and inverted
+    (reverse-complement) repeats and a stricter \emph{foreign} control, all paired with the
+    base protocol on identical sequences (\S\ref{sec:extensions}).
+  \item \textbf{A pip-installable package, \texttt{recall-bench},} that evaluates any model
+    exposing token-to-logit predictions in a few lines, with a CLI, a one-line-per-model
+    registry, resumable sweeps, and a CPU test suite; every result in this paper runs on a
+    single 8\,GB consumer GPU (\S\ref{sec:impl}).
 \end{itemize}
 
 \section{Related Work}
@@ -185,7 +189,8 @@ or the run exceeds GPU memory; skips are reported explicitly rather than imputed
 \textbf{Conservative by construction.} Inserting $A$ in place of $B$ removes the natural
 upstream context of $D$. At very short $d$ this can slightly \emph{hurt} the repeat window,
 which is why some models show small negative $\Delta$ at $d=64$ (\S\ref{sec:results}). The
-copy advantage is therefore a lower bound on the information a model extracts from the copy.
+copy advantage is therefore a lower bound on the information a model extracts from the copy;
+the foreign control below removes this penalty.
 
 \textbf{Scope.} $\Delta(d)>0$ certifies that a model can retrieve exact earlier content at
 distance $d$; it does not certify that the model uses \emph{biological} long-range
@@ -195,17 +200,68 @@ precondition for exploiting repeats and duplications but not for every long-rang
 We regard \textsc{RecallBench-DNA} as a \emph{necessary-capability} test that complements,
 rather than replaces, task benchmarks.
 
-\subsection{Implementation}
+\subsection{Protocol extensions}
+\label{sec:extensions}
+
+The construction above tests one specific case: an \emph{exact}, \emph{same-strand} copy,
+compared against the \emph{native} genome. Each restriction can be relaxed independently, and
+we provide three options that do so while keeping the paired design.
+
+\textbf{Foreign control.} In the default (\emph{native}) control, $B$ is the sequence that
+genuinely precedes $D$, whereas the repeat window splices in $A$; the two windows therefore
+differ both in \emph{whether} the earlier piece matches $A$ and in \emph{whether} it fits its
+surroundings. The \emph{foreign} control replaces $B$ with a 256\,bp segment drawn from an
+unrelated genomic location. Both windows then contain an out-of-place piece, and they differ
+only in its identity, so $\Delta$ measures recall alone.
+
+\textbf{Diverged repeats.} Real repeats are rarely identical: paralogs, segmental duplications,
+and transposable-element copies differ by point substitutions. The \emph{mutate} variant
+substitutes each base of the \emph{first} copy independently with probability $p$ (uniformly
+among the other three bases). The scored final copy is unchanged, so $\Delta$ measures how much
+a model can still exploit a copy that diverges from the target at rate $p$.
+
+\textbf{Inverted repeats.} DNA is double-stranded, and a sequence frequently recurs as its
+reverse complement (inverted repeats, hairpins, transposons inserted on the opposite strand).
+The \emph{revcomp} variant uses the reverse complement of $A$ as the first copy. A model with
+strand-aware recall can exploit it; a model that only matches forward strings cannot.
+
+\textbf{Pairing across options.} Randomness for an option (substitution positions, the foreign
+segment) is drawn from a separate generator seeded by $(\text{seed}, C, d, 1)$. The lead,
+background, and segment for a given $(\text{seed}, C, d)$ are therefore identical under every
+option, so differences between options are themselves paired comparisons, and the default
+options reproduce the original windows exactly.
+
+\subsection{Software package}
 \label{sec:impl}
 
-The harness is a small Python package. A YAML registry lists each model's family, Hugging Face
-identifier, maximum context, and tokenizer alignment; family adapters expose a uniform
-\texttt{tokenize}/\texttt{logits} interface for Mnemos-DNA, HyenaDNA, Caduceus, generic
-Hugging Face masked and causal LMs, and Evo~2. Models are downloaded only when tested and can
-be deleted afterwards, so the full sweep fits on a laptop disk. Every trial is checkpointed
-atomically; an interrupted run resumes by replaying the random stream without model calls,
-producing results bit-identical to an uninterrupted run. All results in this paper were
-produced on one NVIDIA RTX~5060 Laptop GPU (8\,GB) in bf16.
+\textsc{RecallBench-DNA} is distributed as a pip-installable Python package,
+\texttt{recall-bench}, with a minimal core (PyTorch, NumPy, PyYAML) and optional extras for
+Hugging Face models and data preparation. It is designed so that evaluating a new model takes
+a few lines and no knowledge of the benchmark's internals:
+
+\begin{small}
+\begin{verbatim}
+import recall_bench as rb
+m = rb.CallableModel(logits_fn=net, tokenize=enc,
+                     causal=True, max_ctx=131072)
+rows = rb.evaluate(m, distances=[64, 1024, 65536],
+                   variant="mutate", mut_rate=0.05)
+\end{verbatim}
+\end{small}
+
+\noindent Any callable that maps token ids to logits can be wrapped, masked LMs are supported
+via a mask token, and any Hugging Face causal or masked LM can be loaded by identifier. A
+command-line tool (\texttt{recall-bench prepare|run|run-hf|report}) builds the held-out
+background, runs sweeps, and prints result tables. A packaged registry lists each released
+model's family, identifier, maximum context, and tokenizer alignment; adding a model is one
+line. Models are downloaded only when tested and can be deleted afterwards, so the full study
+fits on a laptop disk. Every trial is checkpointed atomically; an interrupted run resumes by
+replaying the random stream without model calls, producing results bit-identical to an
+uninterrupted run. A CPU-only test suite checks the protocol against two reference models: a
+model that ignores context must score exactly $\Delta=0$, and a $k$-gram induction model that
+copies forward must score highly on exact repeats, less on mutated ones, and near zero on
+reverse-complement ones. All results in this paper were produced on one NVIDIA RTX~5060
+Laptop GPU (8\,GB) in bf16.
 
 % ---------------------------------------------------------------------------------------------
 \section{Experimental Setup}
@@ -258,9 +314,9 @@ that model is skipped at every distance and reported only for completeness.
 \caption{Copy advantage versus distance between copies. (a) Full scale: the two models with a
 $k$-mer fast-weight memory retain most of their recall to 16\,kbp and remain clearly
 positive at 256\,kbp, twice their 131\,kbp training context. Every other model lies on the
-zero line. (b) The same models at $\sim$60$\times$ magnification, with 95\% bootstrap
-intervals; markers are dodged horizontally for legibility. No model without the memory
-exceeds $0.0021$\,nats/bp at any distance.}
+zero line. (b) Copy advantage (nats/bp) for every model and distance; darker
+cells mean stronger recall, n/a marks distances beyond a model's context. No model without
+the memory exceeds $0.0021$\,nats/bp at any distance.}
 \label{fig:main}
 \end{figure*}
 
@@ -353,17 +409,23 @@ barrier for groups without datacenter hardware to audit published models.
 \section{Limitations and Future Work}
 \label{sec:limitations}
 
-\textbf{Exact copies only.} The current probe measures recall of identical sequence. Real
-repeats diverge; extending the benchmark with controlled substitution and indel rates, and
-with reverse-complement copies (relevant to RC-equivariant models such as Caduceus), would
-measure robustness of recall. \textbf{Coverage.} We report nine evaluable checkpoints. The
-harness already supports the Nucleotide Transformer, DNABERT-2, GENA-LM, GENERator, and
-Evo~2, and a text-LM positive control (Pythia~\cite{biderman2023pythia}, Mamba, RWKV, GLA,
-and DeltaNet on WikiText-103~\cite{merity2017wikitext}); these runs are in progress and not
-reported here. \textbf{Hardware ceiling.} Distances beyond 256\,kbp, and some models at
-256\,kbp, require more than 8\,GB of GPU memory. \textbf{Single segment length and seed.}
-We fix $s=256$\,bp and seed 0; while every point averages 128 independent windows, varying
-$s$ would reveal whether shorter repeats are recalled differently. \textbf{Potential conflict
+\textbf{Copy types.} The protocol extensions (\S\ref{sec:extensions}) cover substitutions
+and reverse complements, but not insertions and deletions, which shift the alignment between
+the copies; indel-bearing repeats and tandem (adjacent, $d=0$) repeats are natural next
+variants. \textbf{Exact recall is not biological long-range modeling.} Enhancer--promoter
+interactions and other long-range signals are not copies, so a high $\Delta$ is necessary but
+not sufficient for them; pairing this benchmark with task suites such as the Genomics
+Long-Range Benchmark~\cite{trop2024lrb} remains essential. \textbf{Coverage.} We report nine
+evaluable checkpoints. The package already supports the Nucleotide Transformer, DNABERT-2,
+GENA-LM, GENERator, and Evo~2, and a text-LM positive control
+(Pythia~\cite{biderman2023pythia}, Mamba, RWKV, GLA, and DeltaNet on
+WikiText-103~\cite{merity2017wikitext}); these runs are in progress and not reported here.
+Protocol extensions were run up to 64\,kbp. \textbf{Hardware ceiling.} Distances beyond
+256\,kbp, and some models at 256\,kbp, require more than 8\,GB of GPU memory.
+\textbf{Single segment length, seed, and genome.} We fix $s=256$\,bp, seed 0, and the human
+genome; every point averages 128 independent windows, and the package accepts any
+background (e.g.\ other species) and segment length, but we have not yet studied these axes.
+\textbf{Potential conflict
 of interest.} The Mnemos-DNA models are from the same author as this benchmark, which was
 originally developed as an evaluation probe for them. To mitigate this, the protocol, code,
 and all per-trial results are public, every model is evaluated by the identical procedure on

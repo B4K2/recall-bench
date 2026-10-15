@@ -8,6 +8,7 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "paper" / "figures"
@@ -31,10 +32,17 @@ MEMORY = {"mnemos-dna", "mnemos-dna-c"}
 PALETTE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"]
 MARKERS = ["o", "s", "^", "D", "v", "P", "X"]
 GRAY = "#b5b4ad"
+DEFAULT = {"variant": "exact", "mut_rate": 0.0, "control": "native"}
+MUT_RATES = [0.0, 0.01, 0.05, 0.1, 0.2]
+# One-hue sequential ramp (reference palette blue, light -> dark) for mutation rate.
+RAMP = ["#0d366b", "#1c5cab", "#3987e5", "#6da7ec", "#9ec5f4"]
+PROTO_DISTS = [64, 1024, 16384, 65536]
 
 
-def load():
-    """{model: {dist: row}}; keeps only the full-trial row per distance (drops n=16 pilots)."""
+def load(variant="exact", mut_rate=0.0, control="native"):
+    """{model: {dist: row}} for one protocol; keeps only the full-trial row per distance (drops
+    n=16 pilots). Rows without protocol fields predate the options and are exact/native."""
+    want = {"variant": variant, "mut_rate": mut_rate, "control": control}
     res = {}
     for key, _ in MODELS:
         f = ROOT / "results" / key / "copy.json"
@@ -42,12 +50,15 @@ def load():
             continue
         by_d = {}
         for r in json.loads(f.read_text())["rows"]:
+            if any(r.get(k, DEFAULT[k]) != v for k, v in want.items()):
+                continue
             d = r.get("dist")
             if r["status"] != "ok":
                 by_d.setdefault(d, r)
             elif r.get("n", 0) >= by_d.get(d, {}).get("n", 0):
                 by_d[d] = r
-        res[key] = by_d
+        if by_d:
+            res[key] = by_d
     return res
 
 
@@ -56,7 +67,8 @@ def figure(res):
                          "axes.edgecolor": "#6f6e69", "axes.labelcolor": "#2b2b29",
                          "xtick.color": "#6f6e69", "ytick.color": "#6f6e69",
                          "pdf.fonttype": 42, "font.family": "serif"})
-    fig, (a, b) = plt.subplots(1, 2, figsize=(7.0, 2.5), constrained_layout=True)
+    fig, (a, b) = plt.subplots(1, 2, figsize=(7.0, 2.7), constrained_layout=True,
+                                   gridspec_kw={"width_ratios": [1, 1.25]})
     others = [k for k, _ in MODELS if k in res and k not in MEMORY
               and any(r["status"] == "ok" for r in res[k].values())]
     label = dict(MODELS)
@@ -78,26 +90,44 @@ def figure(res):
     a.set_ylim(-0.05, 1.0)
     a.set_title("(a) Full scale", loc="left", fontsize=8.5)
 
-    # (b) zoom on models without content-addressed memory.
-    for i, k in enumerate(others):
-        x, y, lo, hi = series(k)
-        c = (PALETTE[2:] + ["#4a4a46"])[i]  # slots 1-2 stay reserved for the memory arms
-        x = [v * 1.06 ** (i - len(others) / 2) for v in x]  # dodge overlapping error bars
-        b.errorbar(x, y, yerr=[[v - l for v, l in zip(y, lo)], [h - v for v, h in zip(y, hi)]],
-                   color=c, lw=1.2, marker=MARKERS[i % len(MARKERS)], ms=3.5, capsize=1.5,
-                   elinewidth=0.7, label=label[k])
-    b.set_ylim(-0.015, 0.006)
-    b.set_title("(b) Zoom: models without k-mer memory", loc="left", fontsize=8.5)
+    # (b) every model x distance as an annotated grid: readable without decoding overlapping lines.
+    rows = [k for k, _ in MODELS if k in res and any(r["status"] == "ok" for r in res[k].values())]
+    grid = np.full((len(rows), len(DISTS)), np.nan)
+    for i, k in enumerate(rows):
+        for j, d in enumerate(DISTS):
+            r = res[k].get(d)
+            if r is not None and r["status"] == "ok":
+                grid[i, j] = r["copy_advantage"]
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("w2b", ["#ffffff", PALETTE[0]])
+    cmap.set_bad("#f1f0ea")
+    b.imshow(np.clip(grid, 0, None), cmap=cmap, vmin=0, vmax=1.0, aspect="auto")
+    for i, k in enumerate(rows):
+        for j, d in enumerate(DISTS):
+            v, r = grid[i, j], res[k].get(d)
+            if np.isnan(v):
+                txt = "--" if r is None else ("OOM" if "OOM" in r["status"] else "n/a")
+                b.text(j, i, txt, ha="center", va="center", fontsize=5.5, color="#9a9992")
+            else:
+                b.text(j, i, f"{v + 0.0:.2f}".replace("-0.00", "0.00"), ha="center", va="center", fontsize=6,
+                       color="white" if v > 0.5 else "#2b2b29",
+                       fontweight="bold" if k in MEMORY else "normal")
+    b.set_yticks(range(len(rows)), [label[k] for k in rows], fontsize=6.5)
+    b.set_xticks(range(len(DISTS)), ["64", "256", "1K", "4K", "16K", "64K", "256K"])
+    b.tick_params(length=0)
+    for sp in b.spines.values():
+        sp.set_visible(False)
+    b.axhline(len(MEMORY) - 0.5, color="#2b2b29", lw=0.8)  # memory arms above, everything else below
+    b.set_xlabel("Distance $d$ between copies (bp)")
+    b.set_title("(b) All models (0.00 = no recall)", loc="left", fontsize=8.5)
 
-    for ax in (a, b):
+    for ax in (a,):
         ax.set_xscale("log", base=2)
         ax.set_xticks(DISTS, ["64", "256", "1K", "4K", "16K", "64K", "256K"])
         ax.axhline(0, color="#6f6e69", lw=0.6, ls="--", zorder=0)
         ax.grid(axis="y", color="#e6e5df", lw=0.5)
         ax.set_xlabel("Distance $d$ between copies (bp)")
-    a.set_ylabel("Copy advantage (nats/bp)")
+    a.set_ylabel("Copy advantage (nats/bp)\n(higher = better recall)")
     a.legend(frameon=False, fontsize=7, loc="lower left", bbox_to_anchor=(0, 0.1))
-    b.legend(frameon=False, fontsize=6, ncol=2, loc="lower right")
     OUT.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT / "recall_vs_distance.pdf")
     fig.savefig(OUT / "recall_vs_distance.png", dpi=200)
@@ -127,8 +157,66 @@ def table(res):
     (OUT / "recall_table.tex").write_text("\n".join(lines) + "\n")
 
 
+def _fmt(r):
+    if r is None:
+        return "--"
+    if r["status"] != "ok":
+        return r"$\times$"
+    v = 100 * r["copy_advantage"]
+    sig = r["ci_lo"] > 0 or r["ci_hi"] < 0
+    return (f"{v:+.1f}" if abs(v) >= 10 else f"{v:+.2f}") + ("$^*$" if sig else "")
+
+
+def protocol_table():
+    """Foreign control and reverse-complement copies, same units as the main table."""
+    fo, rc = load(control="foreign"), load(variant="revcomp")
+    lines = []
+    for k, lab in MODELS:
+        if k not in fo and k not in rc:
+            continue
+        cells = [_fmt(src.get(k, {}).get(d)) for src in (fo, rc) for d in PROTO_DISTS]
+        lines.append(f"{lab} & " + " & ".join(cells) + r" \\")
+        if k == "kda-local-d02":
+            lines.append(r"\midrule")
+    (OUT / "protocol_table.tex").write_text("\n".join(lines) + "\n")
+
+
+def mutation_figure():
+    """Copy advantage vs distance per substitution rate, one panel per memory model."""
+    arms = [k for k in ("mnemos-dna", "mnemos-dna-c") if load(variant="mutate", mut_rate=0.01).get(k)]
+    if not arms:
+        return
+    fig, axes = plt.subplots(1, len(arms), figsize=(3.5 * len(arms), 2.4), sharey=True,
+                             constrained_layout=True)
+    axes = list(np.atleast_1d(axes))
+    for ax, k in zip(axes, arms):
+        for i, p in enumerate(MUT_RATES):
+            res = load(variant="mutate", mut_rate=p) if p else load()
+            pts = [(d, res[k][d]) for d in PROTO_DISTS if d in res.get(k, {})
+                   and res[k][d]["status"] == "ok"]
+            if not pts:
+                continue
+            x, y = [d for d, _ in pts], [r["copy_advantage"] for _, r in pts]
+            ax.fill_between(x, [r["ci_lo"] for _, r in pts], [r["ci_hi"] for _, r in pts],
+                            color=RAMP[i], alpha=0.15, lw=0)
+            ax.plot(x, y, color=RAMP[i], lw=2, marker="o", ms=3.5,
+                    label="exact" if p == 0 else f"{p:.0%} subst.")
+        ax.set_xscale("log", base=2)
+        ax.set_xticks(PROTO_DISTS, ["64", "1K", "16K", "64K"])
+        ax.axhline(0, color="#6f6e69", lw=0.6, ls="--", zorder=0)
+        ax.grid(axis="y", color="#e6e5df", lw=0.5)
+        ax.set_xlabel("Distance $d$ between copies (bp)")
+        ax.set_title(dict(MODELS)[k], loc="left", fontsize=8.5)
+    axes[0].set_ylabel("Copy advantage (nats/bp)")
+    axes[-1].legend(frameon=False, fontsize=6.5, loc="lower left")
+    fig.savefig(OUT / "mutation.pdf")
+    fig.savefig(OUT / "mutation.png", dpi=200)
+
+
 if __name__ == "__main__":
     r = load()
     figure(r)
     table(r)
+    protocol_table()
+    mutation_figure()
     print(f"wrote {OUT}")

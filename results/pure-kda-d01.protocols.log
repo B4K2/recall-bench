@@ -1,0 +1,14 @@
+==> [pure-kda-d01] protocols
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files:  50%|█████     | 1/2 [00:00<00:00,  2.41it/s]Fetching 2 files: 100%|██████████| 2/2 [00:05<00:00,  3.26s/it]Fetching 2 files: 100%|██████████| 2/2 [00:05<00:00,  2.83s/it]
+ctx=    2048 d=     64  copy_advantage=+0.0098 ± 0.0021  (6.2s)
+ctx=    2048 d=    256  copy_advantage=+0.0039 ± 0.0012  (2.2s)
+ctx=    2048 d=   1024  copy_advantage=+0.0005 ± 0.0001  (2.4s)
+ctx=    8192 d=   4096  copy_advantage=+0.0002 ± 0.0000  (4.4s)
+ctx=   32768 d=  16384  copy_advantage=+0.0000 ± 0.0000  (18.4s)
+ctx=  131072 d=  65536  copy_advantage=+0.0000 ± 0.0000  (82.5s)
+ctx=    2048 d=     64  copy_advantage=-0.0140 ± 0.0044  (6.2s)
+ctx=    2048 d=    256  copy_advantage=-0.0022 ± 0.0010  (2.3s)
+ctx=    2048 d=   1024  copy_advantage=+0.0003 ± 0.0001  (2.2s)
+ctx=    8192 d=   4096  copy_advantage=+0.0000 ± 0.0001  (4.1s)
+ctx=   32768 d=  16384  copy_advantage=-0.0000 ± 0.0000  (18.5s)
+ctx=  131072 d=  65536  copy_advantage=-0.0000 ± 0.0000  (82.3s)
