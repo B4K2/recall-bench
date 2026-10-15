@@ -63,16 +63,16 @@ def _merge(base: dict, over: dict) -> dict:
 
 
 class Mnemos(Adapter):
-    """Mnemos-DNA arms (B4K2xx/Mnemos-DNA). Model code comes from the dna-kda package."""
+    """Mnemos-DNA arms (B4K2xx/Mnemos-DNA). Model code is vendored in recall_bench._mnemos."""
 
     def __init__(self, *a):
         super().__init__(*a)
-        from dataset.tokenizer import BOS_ID, encode
+        from recall_bench._mnemos.tokenizer import BOS_ID, encode
         d = self.path / self.entry["subdir"]
         # HF configs are overlays on Mnemos-DNA's base.yaml (vendored as configs/mnemos_base.yaml)
         cfg = _merge(yaml.safe_load((PKG / "configs/mnemos_base.yaml").read_text()),
                      yaml.safe_load((d / "config.yaml").read_text()))
-        mod = importlib.import_module(f"models.{cfg.get('model_module', cfg['model_id'])}")
+        mod = importlib.import_module(f"recall_bench._mnemos.models.{cfg.get('model_module', cfg['model_id'])}")
         self.model = mod.build_model(cfg)
         ck = torch.load(d / "model.pt", map_location="cpu", weights_only=False)
         self.model.load_state_dict(ck.get("model_state_dict", ck))
@@ -100,30 +100,13 @@ class HyenaDNA(_HFTokenizerMixin, Adapter):
         return self.model(input_ids=ids)
 
 
-def _stub_mnemos_benchmarks():
-    """The Mnemos-DNA wheel ships `models/` but not `benchmarks/`, yet `models.external` imports
-    `benchmarks.harness.SkipBenchmark` at module scope. Only the Caduceus loader helpers are used
-    here, so a stand-in exception class is enough."""
-    import sys
-    import types
-    try:
-        import benchmarks.harness  # noqa: F401
-    except ModuleNotFoundError:
-        pkg, mod = types.ModuleType("benchmarks"), types.ModuleType("benchmarks.harness")
-        mod.SkipBenchmark = type("SkipBenchmark", (Exception,), {})
-        pkg.harness = mod
-        sys.modules.setdefault("benchmarks", pkg)
-        sys.modules.setdefault("benchmarks.harness", mod)
-
-
 class Caduceus(_HFTokenizerMixin, Adapter):
     """Bidirectional masked LM; loaded through Mnemos-DNA's transformers>=5 patches."""
     causal = False
 
     def __init__(self, *a):
         super().__init__(*a)
-        _stub_mnemos_benchmarks()
-        from models.external import _caduceus_class, _mamba_transformers_shim
+        from recall_bench._mnemos.caduceus import _caduceus_class, _mamba_transformers_shim
         _mamba_transformers_shim()
         self._load_tok()
         self.mask_id = self.tok.mask_token_id

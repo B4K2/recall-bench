@@ -24,7 +24,7 @@ hf = ["transformers>=4.46", "huggingface-hub>=0.26", "einops>=0.8", "python-dote
 # Building the hg38 / wikitext backgrounds (`recall-bench prepare`).
 data = ["biopython>=1.84", "datasets>=3.0"]
 # Mnemos-DNA arms, Caduceus loader, and GLA/DeltaNet text controls.
-mnemos = ["recall-bench[hf]", "flash-linear-attention>=0.5.2", "dna-kda"]
+mnemos = ["recall-bench[hf]", "flash-linear-attention>=0.5.2"]
 all = ["recall-bench[hf,data,mnemos]"]
 dev = ["pytest>=8.0", "matplotlib>=3.8"]
 
@@ -36,7 +36,6 @@ Repository = "https://github.com/B4K2/recall-bench"
 
 [tool.uv.sources]
 torch = [{ index = "pytorch-cu128" }]
-dna-kda = { git = "https://github.com/B4K2/Mnemos-DNA" }
 
 [[tool.uv.index]]
 name = "pytorch-cu128"
