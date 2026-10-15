@@ -1,6 +1,7 @@
 # recall-bench
 
 [![PyPI](https://img.shields.io/pypi/v/recall-bench)](https://pypi.org/project/recall-bench/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Python](https://img.shields.io/pypi/pyversions/recall-bench)](https://pypi.org/project/recall-bench/)
 [![Downloads](https://static.pepy.tech/badge/recall-bench)](https://pepy.tech/project/recall-bench)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97-Mnemos--DNA-yellow)](https://huggingface.co/B4K2xx/Mnemos-DNA)
@@ -109,3 +110,7 @@ sm_120 (see Mnemos-DNA CLAUDE.md §9); evo2 needs the `evo2` package and is mark
 | text | Pythia-160M, Mamba-130M, RWKV-4-169M, GLA-340M, DeltaNet-1.3B |
 
 Adding a model is one line in `recall_bench/models.yaml`.
+
+## License
+
+MIT, see [LICENSE](LICENSE).

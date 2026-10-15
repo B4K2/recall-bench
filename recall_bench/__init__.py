@@ -12,7 +12,7 @@ from recall_bench.copy_task import CONTROLS, VARIANTS, DNABackground, TextBackgr
 from recall_bench.paths import data_dir, home, model_dir, registry
 from recall_bench.runner import DISTANCES, evaluate
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 __all__ = ["CallableModel", "CONTROLS", "DISTANCES", "DNABackground", "TextBackground",
            "VARIANTS", "data_dir", "download", "evaluate", "from_hf", "home", "load_adapter",
            "model_dir", "registry"]
