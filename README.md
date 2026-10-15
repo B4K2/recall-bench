@@ -3,7 +3,6 @@
 [![PyPI](https://img.shields.io/pypi/v/recall-bench)](https://pypi.org/project/recall-bench/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Python](https://img.shields.io/pypi/pyversions/recall-bench)](https://pypi.org/project/recall-bench/)
-[![Downloads](https://static.pepy.tech/badge/recall-bench)](https://pepy.tech/project/recall-bench)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97-Mnemos--DNA-yellow)](https://huggingface.co/B4K2xx/Mnemos-DNA)
 
 Zero-shot long-range **recall** benchmark for genomic language models: how far back can a DNA
