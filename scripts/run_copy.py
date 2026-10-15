@@ -23,6 +23,12 @@ from recall_bench.copy_task import DNABackground, TextBackground, run_point
 DISTANCES = "64,256,1024,4096,16384,65536,262144"
 
 
+def _atomic_write(path, text):
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(text)
+    tmp.replace(path)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("name")
@@ -55,7 +61,13 @@ def main():
             r = {"status": "skip: OOM at shorter ctx"}
         else:
             try:
-                r = run_point(ad, bg, ctx, d, seg, a.trials, a.seed)
+                part = out.parent / f"partial_{ctx}_{d}_{seg}_{a.trials}_{a.seed}.json"
+                prev = json.loads(part.read_text()) if part.exists() else []
+                if prev:
+                    print(f"resuming ctx={ctx} d={d} at trial {len(prev)}/{a.trials}", flush=True)
+                r = run_point(ad, bg, ctx, d, seg, a.trials, a.seed, prev,
+                              lambda ds: _atomic_write(part, json.dumps(ds)))
+                part.unlink(missing_ok=True)
             except torch.OutOfMemoryError:
                 torch.cuda.empty_cache(); oom = True; r = {"status": "skip: OOM"}
         if ad.domain == "dna":

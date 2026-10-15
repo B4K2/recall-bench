@@ -1,0 +1,28 @@
+% IEEE conference format (IEEEtran.cls). Build: cd paper/ieee && latexmk -pdf main
+\documentclass[conference]{IEEEtran}
+\usepackage{cite,amsmath,amssymb,graphicx,booktabs,url,tikz}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage[hidelinks]{hyperref}
+
+\begin{document}
+\title{How Far Back Can a Genomic Language Model Remember?\\
+A Zero-Shot Long-Range Recall Benchmark for DNA Language Models}
+
+\author{\IEEEauthorblockN{Akshat Balyan}
+\IEEEauthorblockA{\textit{Affiliation} \\ City, Country \\ email@example.com}}
+
+\maketitle
+
+\begin{abstract}
+\input{../sections/abstract}
+\end{abstract}
+
+\begin{IEEEkeywords}
+DNA language models, long-context modeling, benchmark, recall, genomics, linear attention
+\end{IEEEkeywords}
+
+\input{../sections/body}
+
+\bibliographystyle{IEEEtran}
+\bibliography{../refs}
+\end{document}

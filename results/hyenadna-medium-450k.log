@@ -1,0 +1,15 @@
+==> [hyenadna-medium-450k] download
+==> [hyenadna-medium-450k] download
+Fetching 9 files:   0%|          | 0/9 [00:00<?, ?it/s]Fetching 9 files: 100%|██████████| 9/9 [00:00<00:00, 541.50it/s]
+/home/akshat/recall-bench/checkpoints/hyenadna-medium-450k
+==> [hyenadna-medium-450k] copy-recall probe
+Loading weights:   0%|          | 0/212 [00:00<?, ?it/s]Loading weights: 100%|██████████| 212/212 [00:00<00:00, 5620.05it/s]
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+reused: ctx=2048 d=64
+reused: ctx=2048 d=256
+reused: ctx=2048 d=1024
+reused: ctx=8192 d=4096
+reused: ctx=32768 d=16384
+ctx=  131072 d=  65536  copy_advantage=-0.0000 ± 0.0000  (170.3s)
+ctx=  524288 d= 262144  copy_advantage=skip: above model max_ctx  (0.2s)
+==> [hyenadna-medium-450k] removing checkpoints/hyenadna-medium-450k

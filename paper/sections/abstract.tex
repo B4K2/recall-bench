@@ -1,0 +1,18 @@
+Genomic language models now advertise context windows of 131\,kbp to 1\,Mbp, but a long
+window is not the same as a long memory: nothing in standard perplexity or downstream
+fine-tuning tells us whether a model can actually \emph{use} information that appeared far
+back in its input. We introduce \textsc{RecallBench-DNA}, a zero-shot benchmark that measures
+exactly this. A real 256\,bp human-genome segment is repeated after $d$ base pairs of held-out
+genomic background, and we score the model's cross-entropy on the second copy against a paired
+control window in which the first copy is absent. The difference, the \emph{copy advantage}
+in nats per base pair, isolates recall at distance $d$; it requires no training, no labels,
+and no task head, applies to causal and masked models alike, and comes with bootstrap
+confidence intervals. Sweeping $d$ from 64\,bp to 256\,kbp across nine released DNA language
+models, we find a sharp dichotomy. Every evaluable HyenaDNA and Caduceus checkpoint, and every
+linear-attention model without an explicit content-addressed memory, shows a copy advantage
+of at most $0.0021$\,nats/bp at every distance---indistinguishable from zero in practical
+terms, including at distances far inside their advertised context. In contrast, models
+equipped with a $k$-mer fast-weight memory retain $0.80$--$0.83$\,nats/bp up to 1\,kbp,
+$0.52$--$0.60$ at 64\,kbp, and $0.25$--$0.30$ at 256\,kbp, twice their training context.
+The benchmark runs on a single 8\,GB consumer GPU, and we release code, the model
+registry, and all per-trial results.

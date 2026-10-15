@@ -1,0 +1,43 @@
+==> [caduceus-ph-131k] download
+==> [caduceus-ph-131k] download
+Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Fetching 10 files:  10%|█         | 1/10 [00:01<00:09,  1.04s/it]Fetching 10 files:  60%|██████    | 6/10 [00:01<00:00,  5.84it/s]Fetching 10 files:  80%|████████  | 8/10 [00:02<00:00,  4.14it/s]Fetching 10 files:  90%|█████████ | 9/10 [00:02<00:00,  3.65it/s]Fetching 10 files: 100%|██████████| 10/10 [00:07<00:00,  1.21s/it]Fetching 10 files: 100%|██████████| 10/10 [00:07<00:00,  1.41it/s]
+/home/akshat/recall-bench/checkpoints/caduceus-ph-131k
+==> [caduceus-ph-131k] copy-recall probe
+Traceback (most recent call last):
+  File "/home/akshat/recall-bench/scripts/run_copy.py", line 84, in <module>
+    main()
+  File "/home/akshat/recall-bench/scripts/run_copy.py", line 43, in main
+    ad = load_adapter(a.name, a.device)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/akshat/recall-bench/recall_bench/adapters.py", line 181, in load_adapter
+    return FAMILIES[entry["family"]](name, entry, device, dtype)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/akshat/recall-bench/recall_bench/adapters.py", line 109, in __init__
+    from models.external import _caduceus_class, _mamba_transformers_shim
+  File "/home/akshat/recall-bench/.venv/lib/python3.12/site-packages/models/external/__init__.py", line 26, in <module>
+    from benchmarks.harness import SkipBenchmark
+ModuleNotFoundError: No module named 'benchmarks'
+==> [caduceus-ph-131k] download
+Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Fetching 10 files: 100%|██████████| 10/10 [00:00<00:00, 490.54it/s]
+/home/akshat/recall-bench/checkpoints/caduceus-ph-131k
+==> [caduceus-ph-131k] copy-recall probe
+Loading weights:   0%|          | 0/274 [00:00<?, ?it/s]Loading weights: 100%|██████████| 274/274 [00:00<00:00, 14034.45it/s]
+[transformers] [1mCaduceusForMaskedLM LOAD REPORT[0m from: /home/akshat/recall-bench/checkpoints/caduceus-ph-131k
+Key                                                               | Status  | 
+------------------------------------------------------------------+---------+-
+caduceus.backbone.layers.{0...15}.mixer.mamba_rev.out_proj.weight | MISSING | 
+caduceus.backbone.layers.{0...15}.mixer.mamba_rev.in_proj.weight  | MISSING | 
+lm_head.weight                                                    | MISSING | 
+
+Notes:
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+ctx=    2048 d=     64  copy_advantage=+0.0010 ± 0.0013  (5.3s)
+ctx=    2048 d=    256  copy_advantage=+0.0008 ± 0.0007  (3.6s)
+ctx=    2048 d=   1024  copy_advantage=-0.0001 ± 0.0002  (3.7s)
+ctx=    8192 d=   4096  copy_advantage=+0.0000 ± 0.0001  (10.8s)
+ctx=   32768 d=  16384  copy_advantage=+0.0000 ± 0.0000  (40.3s)
+ctx=  131072 d=  65536  copy_advantage=-0.0000 ± 0.0000  (176.7s)
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (261632 > 131072). Running this sequence through the model will result in indexing errors
+ctx=  524288 d= 262144  copy_advantage=skip: above model max_ctx  (0.2s)
+==> [caduceus-ph-131k] removing checkpoints/caduceus-ph-131k

@@ -103,15 +103,22 @@ def segment_ce(adapter, ids, span) -> float:
     return F.cross_entropy(lg, tgt, reduction="sum").item()
 
 
-def run_point(adapter, bg, ctx, dist, seg, trials, seed):
+def run_point(adapter, bg, ctx, dist, seg, trials, seed, partial=(), on_trial=None):
+    """partial: per-trial diffs from an interrupted run; their samples are replayed (no model
+    call) so the rng stream and final result match an uninterrupted run. on_trial(diffs) is
+    called after every new trial so the caller can checkpoint."""
     rng = np.random.default_rng([seed, ctx, dist])
-    diffs, ntok = [], 0
-    for _ in range(trials):
+    diffs, ntok = list(partial), 0
+    for i in range(trials):
         rep, ctl, sr, sc = build_pair(adapter, bg, rng, ctx, dist, seg)
         if len(rep) > adapter.max_ctx or len(ctl) > adapter.max_ctx:
             return {"status": "skip: above model max_ctx", "tokens": max(len(rep), len(ctl))}
-        diffs.append((segment_ce(adapter, ctl, sc) - segment_ce(adapter, rep, sr)) / seg)
         ntok = len(rep)
+        if i < len(partial):
+            continue
+        diffs.append((segment_ce(adapter, ctl, sc) - segment_ce(adapter, rep, sr)) / seg)
+        if on_trial:
+            on_trial(diffs)
     d = np.asarray(diffs)
     boot = np.random.default_rng(seed).choice(d, (1000, len(d))).mean(1)
     return {"status": "ok", "tokens": ntok, "copy_advantage": float(d.mean()),

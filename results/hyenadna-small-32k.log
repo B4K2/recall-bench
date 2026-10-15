@@ -1,0 +1,14 @@
+==> [hyenadna-small-32k] download
+==> [hyenadna-small-32k] download
+Fetching 9 files:   0%|          | 0/9 [00:00<?, ?it/s]Fetching 9 files:  11%|█         | 1/9 [00:00<00:03,  2.13it/s]Fetching 9 files:  22%|██▏       | 2/9 [00:00<00:02,  2.36it/s]Fetching 9 files:  56%|█████▌    | 5/9 [00:00<00:00,  6.54it/s]Fetching 9 files:  78%|███████▊  | 7/9 [00:01<00:00,  8.82it/s]Fetching 9 files: 100%|██████████| 9/9 [00:09<00:00,  1.57s/it]Fetching 9 files: 100%|██████████| 9/9 [00:09<00:00,  1.03s/it]
+/home/akshat/recall-bench/checkpoints/hyenadna-small-32k
+==> [hyenadna-small-32k] copy-recall probe
+Loading weights:   0%|          | 0/108 [00:00<?, ?it/s]Loading weights: 100%|██████████| 108/108 [00:00<00:00, 11439.88it/s]
+reused: ctx=2048 d=64
+reused: ctx=2048 d=256
+reused: ctx=2048 d=1024
+reused: ctx=8192 d=4096
+reused: ctx=32768 d=16384
+reused: ctx=131072 d=65536
+reused: ctx=524288 d=262144
+==> [hyenadna-small-32k] removing checkpoints/hyenadna-small-32k

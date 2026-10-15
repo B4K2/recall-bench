@@ -1,0 +1,15 @@
+==> [hyenadna-large-1m] download
+==> [hyenadna-large-1m] download
+Fetching 9 files:   0%|          | 0/9 [00:00<?, ?it/s]Fetching 9 files:  89%|████████▉ | 8/9 [00:00<00:00,  9.89it/s]Fetching 9 files: 100%|██████████| 9/9 [00:10<00:00,  1.54s/it]Fetching 9 files: 100%|██████████| 9/9 [00:10<00:00,  1.16s/it]
+/home/akshat/recall-bench/checkpoints/hyenadna-large-1m
+==> [hyenadna-large-1m] copy-recall probe
+Loading weights:   0%|          | 0/212 [00:00<?, ?it/s]Loading weights: 100%|██████████| 212/212 [00:00<00:00, 8923.07it/s]
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+ctx=    2048 d=     64  copy_advantage=-0.0017 ± 0.0024  (2.3s)
+ctx=    2048 d=    256  copy_advantage=+0.0001 ± 0.0009  (2.0s)
+ctx=    2048 d=   1024  copy_advantage=+0.0014 ± 0.0006  (2.1s)
+ctx=    8192 d=   4096  copy_advantage=+0.0003 ± 0.0001  (8.1s)
+ctx=   32768 d=  16384  copy_advantage=+0.0001 ± 0.0001  (41.0s)
+ctx=  131072 d=  65536  copy_advantage=-0.0000 ± 0.0000  (175.1s)
+ctx=  524288 d= 262144  copy_advantage=skip: OOM  (0.6s)
+==> [hyenadna-large-1m] removing checkpoints/hyenadna-large-1m

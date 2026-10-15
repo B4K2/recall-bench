@@ -13,3 +13,10 @@ paper/*.blg
 paper/*.pdf
 nohup.out
 .DS_Store
+paper/*/main.pdf
+paper/*/main.bbl
+paper/*/*.aux
+paper/*/*.log
+paper/*/*.blg
+paper/*/*.out
+research-paper-writing-1.0.0/

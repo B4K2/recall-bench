@@ -100,18 +100,43 @@ class HyenaDNA(_HFTokenizerMixin, Adapter):
         return self.model(input_ids=ids)
 
 
+def _stub_mnemos_benchmarks():
+    """The Mnemos-DNA wheel ships `models/` but not `benchmarks/`, yet `models.external` imports
+    `benchmarks.harness.SkipBenchmark` at module scope. Only the Caduceus loader helpers are used
+    here, so a stand-in exception class is enough."""
+    import sys
+    import types
+    try:
+        import benchmarks.harness  # noqa: F401
+    except ModuleNotFoundError:
+        pkg, mod = types.ModuleType("benchmarks"), types.ModuleType("benchmarks.harness")
+        mod.SkipBenchmark = type("SkipBenchmark", (Exception,), {})
+        pkg.harness = mod
+        sys.modules.setdefault("benchmarks", pkg)
+        sys.modules.setdefault("benchmarks.harness", mod)
+
+
 class Caduceus(_HFTokenizerMixin, Adapter):
     """Bidirectional masked LM; loaded through Mnemos-DNA's transformers>=5 patches."""
     causal = False
 
     def __init__(self, *a):
         super().__init__(*a)
+        _stub_mnemos_benchmarks()
         from models.external import _caduceus_class, _mamba_transformers_shim
         _mamba_transformers_shim()
         self._load_tok()
         self.mask_id = self.tok.mask_token_id
         self.model = _caduceus_class(str(self.path)).from_pretrained(
             self.path, trust_remote_code=True).to(self.device).eval()
+        # transformers>=5 no longer ties the non-RCPS (Ph) lm_head to the embeddings through
+        # Caduceus' super().tie_weights(), leaving it randomly initialised (it is not stored
+        # in the checkpoint). Tie it explicitly; RCPS (PS) uses its own set_weight.
+        emb = self.model.get_input_embeddings().weight
+        if self.model.config.rcps:
+            self.model.lm_head.set_weight(emb)
+        else:
+            self.model.lm_head.weight = emb
 
     def _forward(self, ids):
         return self.model(input_ids=ids)

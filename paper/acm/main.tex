@@ -1,0 +1,35 @@
+% ACM proceedings format (acmart.cls, sigconf). Build: cd paper/acm && latexmk -pdf main
+\documentclass[sigconf,nonacm]{acmart}
+\usepackage{booktabs,tikz}
+\usetikzlibrary{decorations.pathreplacing}
+\settopmatter{printacmref=false}
+
+\begin{document}
+\title{How Far Back Can a Genomic Language Model Remember?}
+\subtitle{A Zero-Shot Long-Range Recall Benchmark for DNA Language Models}
+
+\author{Akshat Balyan}
+\affiliation{\institution{Affiliation}\city{City}\country{Country}}
+\email{email@example.com}
+
+\begin{abstract}
+\input{../sections/abstract}
+\end{abstract}
+
+\begin{CCSXML}
+<ccs2012>
+<concept><concept_id>10010147.10010257</concept_id><concept_desc>Computing methodologies~Machine learning</concept_desc><concept_significance>500</concept_significance></concept>
+<concept><concept_id>10010405.10010444.10010450</concept_id><concept_desc>Applied computing~Bioinformatics</concept_desc><concept_significance>500</concept_significance></concept>
+</ccs2012>
+\end{CCSXML}
+\ccsdesc[500]{Computing methodologies~Machine learning}
+\ccsdesc[500]{Applied computing~Bioinformatics}
+\keywords{DNA language models, long-context modeling, benchmark, recall, genomics}
+
+\maketitle
+
+\input{../sections/body}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{../refs}
+\end{document}

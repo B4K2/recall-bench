@@ -1,0 +1,13 @@
+==> [pure-kda-d01] download
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files:  50%|█████     | 1/2 [00:00<00:00,  1.98it/s]==> [pure-kda-d01] download
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files: 100%|██████████| 2/2 [00:05<00:00,  2.90s/it]Fetching 2 files: 100%|██████████| 2/2 [00:05<00:00,  2.90s/it]
+/home/akshat/recall-bench/checkpoints/pure-kda-d01
+==> [pure-kda-d01] copy-recall probe
+reused: ctx=2048 d=64
+reused: ctx=2048 d=256
+reused: ctx=2048 d=1024
+reused: ctx=8192 d=4096
+reused: ctx=32768 d=16384
+reused: ctx=131072 d=65536
+reused: ctx=524288 d=262144
+==> [pure-kda-d01] removing checkpoints/pure-kda-d01

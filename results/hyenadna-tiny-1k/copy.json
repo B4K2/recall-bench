@@ -1,0 +1,89 @@
+{
+ "model": "hyenadna-tiny-1k",
+ "rows": [
+  {
+   "status": "skip: above model max_ctx",
+   "tokens": 2048,
+   "bg_contiguous": true,
+   "model": "hyenadna-tiny-1k",
+   "ctx": 2048,
+   "dist": 64,
+   "seg": 256,
+   "trials": 128,
+   "seed": 0,
+   "seconds": 0.0
+  },
+  {
+   "status": "skip: above model max_ctx",
+   "tokens": 2048,
+   "bg_contiguous": true,
+   "model": "hyenadna-tiny-1k",
+   "ctx": 2048,
+   "dist": 256,
+   "seg": 256,
+   "trials": 128,
+   "seed": 0,
+   "seconds": 0.0
+  },
+  {
+   "status": "skip: above model max_ctx",
+   "tokens": 2048,
+   "bg_contiguous": true,
+   "model": "hyenadna-tiny-1k",
+   "ctx": 2048,
+   "dist": 1024,
+   "seg": 256,
+   "trials": 128,
+   "seed": 0,
+   "seconds": 0.0
+  },
+  {
+   "status": "skip: above model max_ctx",
+   "tokens": 8192,
+   "bg_contiguous": true,
+   "model": "hyenadna-tiny-1k",
+   "ctx": 8192,
+   "dist": 4096,
+   "seg": 256,
+   "trials": 128,
+   "seed": 0,
+   "seconds": 0.0
+  },
+  {
+   "status": "skip: above model max_ctx",
+   "tokens": 32768,
+   "bg_contiguous": true,
+   "model": "hyenadna-tiny-1k",
+   "ctx": 32768,
+   "dist": 16384,
+   "seg": 256,
+   "trials": 128,
+   "seed": 0,
+   "seconds": 0.0
+  },
+  {
+   "status": "skip: above model max_ctx",
+   "tokens": 131072,
+   "bg_contiguous": true,
+   "model": "hyenadna-tiny-1k",
+   "ctx": 131072,
+   "dist": 65536,
+   "seg": 256,
+   "trials": 128,
+   "seed": 0,
+   "seconds": 0.0
+  },
+  {
+   "status": "skip: above model max_ctx",
+   "tokens": 524288,
+   "bg_contiguous": true,
+   "model": "hyenadna-tiny-1k",
+   "ctx": 524288,
+   "dist": 262144,
+   "seg": 256,
+   "trials": 128,
+   "seed": 0,
+   "seconds": 0.2
+  }
+ ]
+}
